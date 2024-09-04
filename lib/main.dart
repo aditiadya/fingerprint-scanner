@@ -18,7 +18,7 @@ void main() async {
     measurementId: "G-VWFLM0BBBS"
   ));
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         
         primarySwatch: Colors.blue,
       ),
-      home: CropScreen(),
+      home: const CropScreen(),
     );
   }
 }

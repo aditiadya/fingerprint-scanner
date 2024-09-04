@@ -1,9 +1,8 @@
 import 'dart:ui';
- 
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
@@ -11,7 +10,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_pytorch/pigeon.dart';
 import 'package:flutter_pytorch/flutter_pytorch.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-
 
 class CropScreen extends StatefulWidget {
   const CropScreen({super.key});
@@ -25,7 +23,7 @@ class _CropScreenState extends State<CropScreen> {
   List<ResultObjectDetection?> objDetect = [];
   File? _image;
   List<img.Image> croppedImages = [];
-  ImagePicker _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker();
   bool isProcessing = false;
   bool showCroppedImages = false;
 
@@ -39,7 +37,10 @@ class _CropScreenState extends State<CropScreen> {
     String pathObjectDetectionModel = "assets/models/best.torchscript.ptl";
     try {
       _objectModel = await FlutterPytorch.loadObjectDetectionModel(
-        pathObjectDetectionModel, 1, 640, 640,
+        pathObjectDetectionModel,
+        1,
+        640,
+        640,
         labelPath: "assets/labels/mylabels.txt",
       );
     } catch (e) {
@@ -117,7 +118,8 @@ class _CropScreenState extends State<CropScreen> {
         width = width.clamp(1, originalImage.width - x);
         height = height.clamp(1, originalImage.height - y);
 
-        img.Image croppedImage = img.copyCrop(originalImage, x, y, width, height);
+        img.Image croppedImage =
+            img.copyCrop(originalImage, x, y, width, height);
         croppedImages.add(croppedImage);
       }));
     }
@@ -157,85 +159,138 @@ class _CropScreenState extends State<CropScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Custom behavior on back button press, if needed
-        return true; // Returning true allows the pop action
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Finger Print Detector"),
-        ),
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isProcessing)
-                const CircularProgressIndicator()
-              else if (!showCroppedImages && _image != null)
-                Expanded(
-                  child: _objectModel.renderBoxesOnImage(
-                    _image!,
-                    objDetect,
-                    boxesColor: const Color.fromRGBO(138, 114, 114, 0.612),
-                    showPercentage: true,
-                  ),
-                )
-              else if (showCroppedImages)
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: GridView.builder(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 4.0,
-                            mainAxisSpacing: 4.0,
-                          ),
-                          itemCount: croppedImages.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Image.memory(
-                                Uint8List.fromList(img.encodePng(croppedImages[index])),
-                                fit: BoxFit.cover,
-                              ),
-                            );
-                          },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Finger Print Detector",
+            style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color.fromARGB(255, 30, 30, 30),
+      ),
+      backgroundColor: const Color.fromARGB(255, 41, 41, 41),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isProcessing)
+              const CircularProgressIndicator()
+            else if (!showCroppedImages && _image != null)
+              Expanded(
+                child: _objectModel.renderBoxesOnImage(
+                  _image!,
+                  objDetect,
+                  boxesColor: const Color.fromARGB(255, 255, 255, 255),
+                  showPercentage: true,
+                ),
+              )
+            else if (showCroppedImages)
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 3.5,
+                          mainAxisSpacing: 3.5,
+                        ),
+                        itemCount: croppedImages.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Image.memory(
+                              Uint8List.fromList(
+                                  img.encodePng(croppedImages[index])),
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _uploadToFirebase,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all<Color>(
+                            const Color.fromARGB(255, 46, 165, 64)),
+                        padding: WidgetStateProperty.all<EdgeInsets>(
+                            const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10)),
+                        textStyle: WidgetStateProperty.all<TextStyle>(
+                          const TextStyle(fontSize: 18, color: Colors.white),
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: _uploadToFirebase,
-                        child: const Text("Add to Firebase"),
+                      child: const Text(
+                        "Add to Firebase",
+                        style: TextStyle(
+                            color: Colors.white), // Set text color to white
                       ),
-                    ],
-                  ),
-                )
-              else
-                const Text("Select the Camera to Begin Detections"),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: runObjectDetection,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.camera),
-                    SizedBox(width: 8),
-                    Text("Capture Image"),
+                    ),
+                    // const SizedBox(height: 10),
                   ],
                 ),
+              )
+            else
+              Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Opacity(
+                    opacity: 0.7,
+                    child: Image.network(
+                      'https://img.icons8.com/?size=100&id=82775&format=png&color=ffffff',
+                      width: 100,
+                      height: 100,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  ElevatedButton(
+                    onPressed: runObjectDetection,
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all<Color>(
+                          const Color.fromARGB(255, 46, 165, 64)),
+                      padding: WidgetStateProperty.all<EdgeInsets>(
+                          const EdgeInsets.symmetric(
+                              horizontal: 35, vertical: 13)),
+                      textStyle: WidgetStateProperty.all<TextStyle>(
+                        const TextStyle(fontSize: 18),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.camera, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          "Capture Image",
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              if (_image != null && !showCroppedImages)
-                Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: ElevatedButton(
-                    onPressed: _cropImages,
-                    child: const Text("Crop Images"),
+            const SizedBox(height: 20),
+            if (_image != null && !showCroppedImages)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: ElevatedButton(
+                  onPressed: _cropImages,
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.all<Color>(
+                        const Color.fromARGB(
+                            255, 46, 165, 64)), 
+                    textStyle: WidgetStateProperty.all<TextStyle>(
+                      const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  child: const Text(
+                    "Crop Images",
+                    style: TextStyle(
+                        fontSize: 18, 
+                        color: Colors.white), // Set text color to white
                   ),
                 ),
-            ],
-          ),
+              ),
+              const SizedBox(height: 35),
+          ],
         ),
       ),
     );
