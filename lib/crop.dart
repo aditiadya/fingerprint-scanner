@@ -259,7 +259,7 @@ class _CropScreenState extends State<CropScreen> {
                         Icon(Icons.camera, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
-                          "Capture Image",
+                          "Scan Document",
                           style: TextStyle(fontSize: 18, color: Colors.white),
                         ),
                       ],
