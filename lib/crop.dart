@@ -80,7 +80,7 @@ class _CropScreenState extends State<CropScreen> {
 
     objDetect = await _objectModel.getImagePrediction(
       imageData,
-      minimumScore: 0.04,
+      minimumScore: 0.30,
       IOUThershold: 0.3,
     );
 
@@ -156,6 +156,47 @@ class _CropScreenState extends State<CropScreen> {
 
     await Future.wait(uploadFutures);
   }
+
+void _showConfirmationDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: const Color.fromARGB(255, 32, 32, 32), // Set background to black
+        title: const Text(
+          "Scan Document",
+          style: TextStyle(color: Colors.white), // Set text color to white
+        ),
+        content: const Text(
+          "Ensure the document is positioned in a well-lit environment and maintained at an optimal distance for accurate scanning.",
+          style: TextStyle(color: Colors.white), // Set text color to white
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: const Text(
+              "Back",
+              style: TextStyle(color: Colors.green), // Set button color to green
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              runObjectDetection(); // Open the camera and scan document
+            },
+            child: const Text(
+              "Continue",
+              style: TextStyle(color: Colors.green), // Set button color to green
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -234,15 +275,17 @@ class _CropScreenState extends State<CropScreen> {
                   const SizedBox(height: 20),
                   Opacity(
                     opacity: 0.7,
-                    child: Image.network(
-                      'https://img.icons8.com/?size=100&id=82775&format=png&color=ffffff',
+                    child: Image.asset(
+                      'assets/images/document_icon.png', // Local image asset
                       width: 100,
                       height: 100,
                     ),
                   ),
                   const SizedBox(height: 40),
                   ElevatedButton(
-                    onPressed: runObjectDetection,
+                    onPressed: () {
+                      _showConfirmationDialog(context);
+                    },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all<Color>(
                           const Color.fromARGB(255, 46, 165, 64)),
